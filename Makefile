@@ -71,45 +71,14 @@ export REALUSER
 # Strings
 INFO_CLEAN = $(info )$(info Cleaning up...)$(info )
 INFO_MAKEFILE = $(info )$(info Updating Makefile...)
-
 INFO_BUILD = $(info Building $(1)...)
 
-# OS detection
-UNAME = $(shell uname)
-#$(info OS: $(OS) $(UNAME))
-ifneq (,$(findstring CYGWIN,$(UNAME)))
-    OSMODE=cygwin
-    FU_SEP=/
-    RM=rm -rf
-	RMDIR=rmdir
-    CP=cp
-	MV=mv
-	LN=ln -s
-    MKDIR=mkdir -p
-    SHARED_LIBRARY_SUFFIX=.dll
-else ifeq ($(OS),Windows_NT)
-	# THIS SCRIPT WILL NEVER RUN UNDER WINDOWS U KNOW
-    OSMODE=windows
-    FU_SEP=\\
-    RM=rd /S /Q
-	RMDIR=rd
-    CP=copy >nul
-	MV=?? # TODO
-	LN=?? # WONT EVER WORK
-    MKDIR=mkdir 2>nul
-    SHARED_LIBRARY_SUFFIX=.dll
-else
-    OSMODE=unix
-    FU_SEP=/
-    RM=rm -rf
-	RMDIR=rmdir
-    CP=cp
-	MV=mv
-	LN=ln -s
-    MKDIR=mkdir -p
-    SHARED_LIBRARY_SUFFIX=.so
-endif
-#$(info Using $(OSMODE) style commands and paths.)
+RM=rm -rf
+RMDIR=rmdir
+CP=cp
+MV=mv
+LN=ln -s
+MKDIR=mkdir -p
 
 .PHONY: default clean-rooted clean dist-clean distclean all info checks upload
 .PRECIOUS: $(DEBDROID) $(DEBDROID).tar.gz
@@ -131,7 +100,7 @@ all: $(ALL_TARGETS)
 $(BUILD_DIR) $(TARGET_DIR) $(CACHE_DIR) $(MARKER):
 	$(MKDIR) $@
 
-# TODO: Rule to automatically create parent directories
+# TODO: Rule to automatically create parent directories?
 
 $(MARKER): | $(TARGET)
 
@@ -212,9 +181,4 @@ upload: $(FULL_IMAGE)
 	$(RSH) "sha256sum $(REMOTE_IMAGE)" | awk '{ print $$1 }' > build/remote_sha256
 	sha256sum $(FULL_IMAGE) | awk '{ print $$1 }' > build/local_sha256
 	cmp build/remote_sha256 build/local_sha256
-
-###################################################################################################
-
-Makefile: Makefile.make ; $(INFO_MAKEFILE)
-	@$(CP) $< $@
 
