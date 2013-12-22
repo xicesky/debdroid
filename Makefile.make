@@ -142,7 +142,7 @@ checks:
 
 # Pre-download debootstrap packages
 
-CACHEFILE = $(CACHE_DIR)/debootstrap-$(RELEASE)-$(ARCH).tar.gz
+CACHEFILE = $(CACHE_DIR)/debootstrap-$(RELEASE)-$(ARCH).tgz
 $(CACHEFILE): | $(CACHE_DIR)
 	$(SCRIPT) bootstrap-download $@
 

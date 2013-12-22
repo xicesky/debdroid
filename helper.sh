@@ -78,9 +78,12 @@ case $MODE in
             mkdir "$DEST" || exit 1
             # Check if we have a cached bootstrap thingy
             CACHED="$2"
-            [ -z "$CACHED" ] && CACHED="cache/deboostrap-${RELEASE}-${ARCH}.tar.gz"
+            # Oh debootstrap why do you care about fucking filenames... tar.gz should be valid...
+            [ -z "$CACHED" ] && CACHED="cache/deboostrap-${RELEASE}-${ARCH}.tgz"
 
             if [ -e "$CACHED" ] ; then
+                # WTF does debootstrap need a absolute path for
+                CACHED="`readlink -f "$CACHED"`"
                 wrap_bootstrap --verbose --unpack-tarball "$CACHED" "$RELEASE" "$DEST"
             else
                 wrap_bootstrap --verbose "$RELEASE" "$DEST" "$MIRROR"
