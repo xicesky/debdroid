@@ -1,0 +1,12 @@
+# Ignore generated stuff
+cache
+build
+target
+
+# Ignore local stuff
+local/**
+!local/.GITDIRECTORY
+
+# Ignore vim swap files
+**/.*.swp
+
