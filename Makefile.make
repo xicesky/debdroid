@@ -46,10 +46,11 @@ CACHE_DIR = cache
 MARKER = $(BUILD_DIR)/marker
 
 # Targets
-DEBDROID = $(BUILD_DIR)/debdroid
-DEBDROID_TARBALL = $(TARGET_DIR)/debdroid.tar.gz
-FSIMAGE=$(BUILD_DIR)/fsimage.bin
-FULL_IMAGE=$(TARGET_DIR)/fsimage.bin
+R=$(RELEASE)-$(ARCH)
+DEBDROID = $(BUILD_DIR)/debdroid-$(R)
+DEBDROID_TARBALL = $(TARGET_DIR)/debdroid-$(R).tar.gz
+FSIMAGE=$(BUILD_DIR)/fsimage-$(R)-$(IMAGE_SIZE_MB)m.bin
+FULL_IMAGE=$(TARGET_DIR)/fsimage-$(R)-$(IMAGE_SIZE_MB)m.bin
 TARGETS = $(DEBDROID_TARBALL) $(FULL_IMAGE)
 ALL_TARGETS = $(TARGETS)
 
@@ -102,16 +103,14 @@ else
 endif
 #$(info Using $(OSMODE) style commands and paths.)
 
-.PHONY: default clean-rooted clean dist-clean distclean all info checks
+.PHONY: default clean-rooted clean dist-clean distclean all info checks upload
 .PRECIOUS: $(DEBDROID) $(DEBDROID).tar.gz
 
 default: all
 #default: info
 
 clean-rooted: ; $(INFO_CLEAN)
-	-$(SUDO) $(RM) $(DEBDROID)
-	# Just to be sure
-	-$(SUDO) $(RM) $(DEBDROID).tar.gz
+	-$(SUDO) $(RM) build/debdroid*
 
 clean: clean-rooted ; $(INFO_CLEAN)
 	-$(RM) $(BUILD_DIR)
@@ -169,18 +168,21 @@ $(FULL_IMAGE): $(FSIMAGE) $(DEBDROID) | $(TARGET_DIR)
 	$(SCRIPT) copy-content "$(DEBDROID)" "$(BUILD_DIR)/mnt"
 	
 	@# TODO should be optional
-	@echo "--------------------------------------------------------------------------------"
-	@echo "Pausing script here to allow for custom modifications."
-	@echo "The current filesystem is mounted at: $(BUILD_DIR)/mnt"
-	@echo "Press return to continue."
-	@read DUMMY
-	@echo "--------------------------------------------------------------------------------"
+	@#echo "--------------------------------------------------------------------------------"
+	@#echo "Pausing script here to allow for custom modifications."
+	@#echo "The current filesystem is mounted at: $(BUILD_DIR)/mnt"
+	@#echo "Press return to continue."
+	@#read DUMMY
+	@#echo "--------------------------------------------------------------------------------"
 	
 	$(SCRIPT) umount "$(BUILD_DIR)/mnt"
 	$(RMDIR) "$(BUILD_DIR)/mnt"
 	@# Linux _should_ destroy the loopback device automatically
 	$(MV) $< $@
 	$(LN) ../$@ $<
+
+upload: $(FULL_IMAGE)
+	adb push $< /sdcard/debian.img
 
 ###################################################################################################
 
