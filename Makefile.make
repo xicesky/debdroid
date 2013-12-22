@@ -14,6 +14,13 @@
 #   	... locales take up 23MB in /usr/share/locale
 #       ... Maybe try busybox for some base tools?
 #       ... Reuse parts of the android system?
+#
+# REFERENCES:
+#   - https://wiki.debian.org/HowtoDebianInAndroid
+#   - https://wiki.debian.org/ChrootOnAndroid
+#   - http://whiteboard.ping.se/Android/Rooting (later: autoroot?)
+#   - Oh and there is: https://wiki.debian.org/EmbeddedDebianFAQ
+#
 
 ###################################################################################################
 # Configuration of installable debian image
