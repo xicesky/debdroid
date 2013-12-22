@@ -90,7 +90,12 @@ case $MODE in
             fi
 
             RESULT="$?"
-            [ "$RESULT" -eq "0" ] || rm -r "$DEST"  # Clean up on error
+            if [ "$RESULT" -eq "0" ] ; then
+                # debootstrap fucks up the date of the target folder
+                touch "$DEST"
+            else
+                rm -r "$DEST"  # Clean up on error
+            fi
             exit $RESULT
         fi
         ;;

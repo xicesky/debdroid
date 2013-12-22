@@ -146,7 +146,7 @@ CACHEFILE = $(CACHE_DIR)/debootstrap-$(RELEASE)-$(ARCH).tgz
 $(CACHEFILE): | $(CACHE_DIR)
 	$(SCRIPT) bootstrap-download $@
 
-$(DEBDROID): $(CACHEFILE) | $(BUILD_DIR) checks
+$(DEBDROID): $(CACHEFILE) | $(BUILD_DIR) ; # checks
 	-$(SUDO) $(RM) $(DEBDROID)
 	$(SCRIPT) bootstrap $@ $<
 
