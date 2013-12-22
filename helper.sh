@@ -8,11 +8,12 @@ MIRROR=${MIRROR:-"http://ftp2.de.debian.org/debian"}
 IMAGE_SIZE_MB=${IMAGE_SIZE_MB:-"512"}
 IMAGE_SIZE_BYTES="`expr $IMAGE_SIZE_MB \* 1024 \* 1024`"
 
+SPEEDHACK=${SPEEDHACK:-"false"}
 REALUSER=${REALUSER:-"`id -un`"}
 VERBOSE=${VERBOSE:-"false"}
 SUDO=${SUDO:-"`which sudo` -E"}
 
-export ARCH RELEASE VARIANT MIRROR REALUSER VERBOSE SUDO
+export ARCH RELEASE VARIANT MIRROR REALUSER SPEEDHACK VERBOSE SUDO
 
 amiroot() {
     test "`id -u`" = "0"
@@ -24,9 +25,13 @@ invoke() {
 }
 
 wrap_bootstrap() {
+    OPT_VARIANT="--variant=$VARIANT"
+    [ -z "$VARIANT" -o "$VARIANT" = "base" ] && OPT_VARIANT=""
+    OPT_SPEED=""
+    $SPEEDHACK && OPT_SPEED="--no-resolve-deps"
     invoke debootstrap \
         --foreign --arch="$ARCH" \
-        --variant="$VARIANT" \
+        $OPT_VARIANT $OPT_SPEED \
         "$@"
 }
 
@@ -84,7 +89,7 @@ case $MODE in
             if [ -e "$CACHED" ] ; then
                 # WTF does debootstrap need a absolute path for
                 CACHED="`readlink -f "$CACHED"`"
-                wrap_bootstrap --verbose --unpack-tarball "$CACHED" "$RELEASE" "$DEST"
+                wrap_bootstrap --verbose --unpack-tarball "$CACHED" "$RELEASE" "$DEST" "$MIRROR"
             else
                 wrap_bootstrap --verbose "$RELEASE" "$DEST" "$MIRROR"
             fi

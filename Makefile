@@ -1,36 +1,37 @@
 
+###################################################################################################
 # This is a GNU Make Makefile
 # Written for GNU Make 3.82
 # (c) 2013 Markus Dangl <sky@q1cc.net>
-# Licensed under the GPL (However you got your hands on this source file)
 
-###################################################################################################
-# Usage (once customized):
-# 1. Create the initial "Makefile":
-#       > ...shell$ make -f Makefile.make Makefile
-#	# The Makefile will automatically be updated in the future.
-# 2. Build the application or a specific file:
-#       > ...shell$ make
-#       > ...shell$ make specific-file
-# 3. Clean up
-#	# To clean up intermediate files
-#       > ...shell$ make clean
-#	# To clean up all generated files (e.g. before RCS checkin or src distribution)
-#       > ...shell$ make distclean
+# TODO / Ideas:
+#   - Be more flashy (don't print that much command / build output, write a log instead)
+#   - Check for prerequisites (adb, debootstrap, netcat ...)
+#   - Support deboostrap + cdebootstrap + maybe grml-debootstrap
+#   - SquashFS + CoW to circumvent limits of conventional filesystem image
+#   - Make debian smaller (somehow)... The default install is already ~150m
+#   	... clear /var/cache/apt
+#   	... locales take up 23MB in /usr/share/locale
+#       ... Maybe try busybox for some base tools?
+#       ... Reuse parts of the android system?
 
 ###################################################################################################
 # Configuration of installable debian image
 #
-#
 
 ARCH := armhf
 RELEASE := jessie
-VARIANT := minbase
+# Useful values: base, minbase
+VARIANT := base
 MIRROR := http://ftp2.de.debian.org/debian
+
 IMAGE_SIZE_MB := 512
 IMAGE_SIZE_BYTES := $(shell expr ${IMAGE_SIZE_MB} \* 1024 \* 1024)	# TODO make can calc, right?
 
-export ARCH RELEASE VARIANT MIRROR IMAGE_SIZE_MB IMAGE_SIZE_BYTES
+# Sets some unsafe options to make e.g. debootstrap faster
+SPEEDHACK := true
+
+export ARCH RELEASE VARIANT MIRROR IMAGE_SIZE_MB IMAGE_SIZE_BYTES SPEEDHACK
 
 SUDO := $(shell which sudo) -E
 export SUDO
@@ -46,13 +47,13 @@ CACHE_DIR = cache
 MARKER = $(BUILD_DIR)/marker
 
 # Targets
-R=$(RELEASE)-$(ARCH)
+R=$(RELEASE)-$(ARCH)-$(VARIANT)
 DEBDROID = $(BUILD_DIR)/debdroid-$(R)
 DEBDROID_TARBALL = $(TARGET_DIR)/debdroid-$(R).tar.gz
 FSIMAGE=$(BUILD_DIR)/fsimage-$(R)-$(IMAGE_SIZE_MB)m.bin
 FULL_IMAGE=$(TARGET_DIR)/fsimage-$(R)-$(IMAGE_SIZE_MB)m.bin
 TARGETS = $(DEBDROID_TARBALL) $(FULL_IMAGE)
-ALL_TARGETS = $(TARGETS)
+ALL_TARGETS = $(FULL_IMAGE)
 
 SCRIPT = $(shell readlink -f ./helper.sh)
 
@@ -123,6 +124,8 @@ all: $(ALL_TARGETS)
 $(BUILD_DIR) $(TARGET_DIR) $(CACHE_DIR) $(MARKER):
 	$(MKDIR) $@
 
+# TODO: Rule to automatically create parent directories
+
 $(MARKER): | $(TARGET)
 
 info: checks
@@ -141,8 +144,8 @@ checks:
 
 # Pre-download debootstrap packages
 
-CACHEFILE = $(CACHE_DIR)/debootstrap-$(RELEASE)-$(ARCH).tgz
-$(CACHEFILE): | $(CACHE_DIR)
+CACHEFILE = $(CACHE_DIR)/debootstrap-$(RELEASE)-$(ARCH)-$(VARIANT).tgz
+$(CACHEFILE): | $(CACHE_DIR) $(BUILD_DIR)
 	$(SCRIPT) bootstrap-download $@
 
 $(DEBDROID): $(CACHEFILE) | $(BUILD_DIR) ; # checks
@@ -198,7 +201,7 @@ upload: $(FULL_IMAGE)
 	@#read FOO
 	$(ADB) forward tcp:5555 tcp:5555
 	pv $< | gzip -c | nc -q 0 localhost 5555
-	# Verify
+	# Verify (TODO: work in parallel)
 	$(RSH) "sha256sum $(REMOTE_IMAGE)" | awk '{ print $$1 }' > build/remote_sha256
 	sha256sum $(FULL_IMAGE) | awk '{ print $$1 }' > build/local_sha256
 	cmp build/remote_sha256 build/local_sha256
