@@ -181,8 +181,27 @@ $(FULL_IMAGE): $(FSIMAGE) $(DEBDROID) | $(TARGET_DIR)
 	$(MV) $< $@
 	$(LN) ../$@ $<
 
+###################################################################################################
+
+REMOTE_IMAGE := /sdcard/debian.img
+ADB := $(shell which adb)
+RSH := $(ADB) shell
+
 upload: $(FULL_IMAGE)
-	adb push $< /sdcard/debian.img
+	@# Direct adb push is slow
+	@#$(ADB) push $< $(REMOTE_IMG)
+	@# We use... NETCAT!
+	$(eval REMOTE_NC := $(shell adb shell which busybox) nc)
+	@#echo "Uploading via $(REMOTE_NC)"
+	( $(RSH) "$(REMOTE_NC) -l -p 5555 | gzip -d >$(REMOTE_IMAGE)" & )	# start remote nc
+	@sleep 0.5 # need to wait, hope this helps
+	@#read FOO
+	$(ADB) forward tcp:5555 tcp:5555
+	pv $< | gzip -c | nc -q 0 localhost 5555
+	# Verify (TODO: work in parallel)
+	$(RSH) "sha256sum $(REMOTE_IMAGE)" | awk '{ print $$1 }' > build/remote_sha256
+	sha256sum $(FULL_IMAGE) | awk '{ print $$1 }' > build/local_sha256
+	cmp build/remote_sha256 build/local_sha256
 
 ###################################################################################################
 
